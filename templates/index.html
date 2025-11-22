@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h1>Система управления соревнованиями</h1>
+    <p>Платформа для организаторов и участников соревнований</p>
+    
+    {% if not session.user_id %}
+    <div class="auth-links">
+        <a href="{{ url_for('login') }}" class="btn btn-primary">Войти в систему</a>
+        <a href="{{ url_for('register') }}" class="btn btn-secondary">Зарегистрироваться</a>
+    </div>
+    {% else %}
+    <div class="dashboard-link">
+        {% if session.role == 'organizer' %}
+            <a href="{{ url_for('organizer_dashboard', org_id=session.user_id) }}" class="btn btn-primary">
+                Перейти в панель организатора
+            </a>
+        {% else %}
+            <a href="{{ url_for('participant_dashboard', part_id=session.user_id) }}" class="btn btn-primary">
+                Перейти в личный кабинет
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Регистрация</h2>
+    <form method="post" class="auth-form">
+        <div class="form-group">
+            <label for="role">Роль:</label>
+            <select id="role" name="role" required onchange="toggleFields()">
+                <option value="">Выберите роль</option>
+                <option value="organizer">Организатор</option>
+                <option value="participant">Участник</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="Введите email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" placeholder="Придумайте пароль" required>
+        </div>
+
+        <div class="form-group">
+            <label for="last_name">Фамилия:</label>
+            <input type="text" id="last_name" name="last_name" placeholder="Введите фамилию" required>
+        </div>
+
+        <div class="form-group">
+            <label for="first_name">Имя:</label>
+            <input type="text" id="first_name" name="first_name" placeholder="Введите имя" required>
+        </div>
+
+        <div class="form-group">
+            <label for="patronymic">Отчество:</label>
+            <input type="text" id="patronymic" name="patronymic" placeholder="Введите отчество">
+        </div>
+
+        <!-- Поля для организатора -->
+        <div id="organizer-fields" style="display: none;">
+            <div class="form-group">
+                <label for="position">Должность:</label>
+                <input type="text" id="position" name="position" placeholder="Должность">
+            </div>
+            <div class="form-group">
+                <label for="qualification">Квалификация:</label>
+                <input type="text" id="qualification" name="qualification" placeholder="Квалификация">
+            </div>
+        </div>
+
+        <!-- Поля для участника -->
+        <div id="participant-fields" style="display: none;">
+            <div class="form-group">
+                <label for="education">Место обучения:</label>
+                <input type="text" id="education" name="education" placeholder="Место обучения">
+            </div>
+            <div class="form-group">
+                <label for="rating">Начальный рейтинг:</label>
+                <input type="number" id="rating" name="rating" value="0" min="0">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+    </form>
+    
+    <p class="auth-link">
+        Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a>
+    </p>
+</div>
+
+<script>
+function toggleFields() {
+    const role = document.getElementById('role').value;
+    document.getElementById('organizer-fields').style.display = 
+        role === 'organizer' ? 'block' : 'none';
+    document.getElementById('participant-fields').style.display = 
+        role === 'participant' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
