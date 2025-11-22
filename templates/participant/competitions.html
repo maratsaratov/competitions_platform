@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Соревнования{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Соревнования</h1>
+    
+    <div class="card">
+        <h3>Активные соревнования</h3>
+        {% if active_competitions %}
+            <div class="competitions-list">
+                {% for comp in active_competitions %}
+                <div class="competition-item">
+                    <h4>{{ comp[1] }}</h4>
+                    <p><strong>Тип:</strong> {{ comp[2] }}</p>
+                    <p><strong>Место проведения:</strong> {{ comp[3] }}</p>
+                    <a href="/participant/{{ part_id }}/competition/{{ comp[0] }}/register" class="btn btn-primary">
+                        Зарегистрироваться
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Нет доступных соревнований для регистрации</p>
+                <p>Все доступные соревнования уже отображаются в вашем личном кабинете</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3>Завершенные соревнования</h3>
+        {% if completed_competitions %}
+            <div class="results-list">
+                {% for comp in completed_competitions %}
+                <div class="result-item">
+                    <h4>{{ comp[0] }}</h4>
+                    <p><strong>Тип:</strong> {{ comp[1] }}</p>
+                    <p><strong>Место:</strong> {{ comp[2] }}, <strong>Баллы:</strong> {{ comp[3] }}</p>
+                    <p><strong>Команда:</strong> {{ comp[4] or 'Индивидуально' }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Пока нет завершенных соревнований</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <a href="/participant/{{ part_id }}" class="btn btn-secondary">Назад в кабинет</a>
+        <a href="/participant/{{ part_id }}/results" class="btn btn-primary">Все мои результаты</a>
+    </div>
+</div>
+{% endblock %}

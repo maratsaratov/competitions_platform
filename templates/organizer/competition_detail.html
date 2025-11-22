@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ competition[0] }}{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>{{ competition[0] }}</h1>
+    <p><strong>Тип:</strong> {{ competition[1] }}</p>
+    <p><strong>Место проведения:</strong> {{ competition[2] }}</p>
+    {% if competition[3] %}
+    <p><strong>Даты проведения:</strong> {{ competition[3] }}</p>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="/organizer/{{ org_id }}/competition/{{ comp_id }}/results" class="btn btn-success">Выставить баллы</a>
+        <a href="/organizer/{{ org_id }}/competitions" class="btn btn-secondary">Назад к списку</a>
+    </div>
+    
+    <div class="card">
+        <h3>Команды-участники</h3>
+        {% if teams %}
+            <div class="teams-list">
+                {% for team in teams %}
+                <div class="team-item">
+                    <h4>{{ team[1] }}</h4>
+                    <p><strong>Участников:</strong> {{ team[2] }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Пока нет зарегистрированных команд</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3>Участники без команды</h3>
+        {% if participants_without_team %}
+            <div class="participants-list">
+                {% for participant in participants_without_team %}
+                <div class="participant-item">
+                    <strong>{{ participant[1] }} {{ participant[2] }} {{ participant[3] }}</strong>
+                    <p>Рейтинг: {{ participant[4] }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Нет участников без команды</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

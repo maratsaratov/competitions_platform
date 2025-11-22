@@ -12,7 +12,10 @@
             <a href="{{ url_for('index') }}" class="nav-logo">Соревнования</a>
             <div class="nav-menu">
                 {% if session.user_id %}
-                    <span class="nav-user">ID: {{ session.user_id }} ({{ session.role }})</span>
+                    <span class="nav-user">
+                        {% if session.role == 'organizer' %}Организатор{% else %}Участник{% endif %}
+                        (ID: {{ session.user_id }})
+                    </span>
                     <a href="{{ url_for('logout') }}" class="nav-link">Выйти</a>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="nav-link">Вход</a>
@@ -35,5 +38,46 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+        // Функция для показа/скрытия полей при выборе опции
+        function toggleFields() {
+            const role = document.getElementById('role');
+            if (role) {
+                const organizerFields = document.getElementById('organizer-fields');
+                const participantFields = document.getElementById('participant-fields');
+                
+                if (organizerFields && participantFields) {
+                    organizerFields.style.display = role.value === 'organizer' ? 'block' : 'none';
+                    participantFields.style.display = role.value === 'participant' ? 'block' : 'none';
+                }
+            }
+
+            const teamChoice = document.querySelector('input[name="team_choice"]:checked');
+            if (teamChoice) {
+                const newTeamFields = document.getElementById('new-team-fields');
+                const existingTeamFields = document.getElementById('existing-team-fields');
+                
+                if (newTeamFields) newTeamFields.style.display = teamChoice.value === 'new_team' ? 'block' : 'none';
+                if (existingTeamFields) existingTeamFields.style.display = teamChoice.value === 'existing_team' ? 'block' : 'none';
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleFields();
+            
+            // Обработчики для радиокнопок
+            const radioButtons = document.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', toggleFields);
+            });
+            
+            const roleSelect = document.getElementById('role');
+            if (roleSelect) {
+                roleSelect.addEventListener('change', toggleFields);
+            }
+        });
+    </script>
 </body>
 </html>

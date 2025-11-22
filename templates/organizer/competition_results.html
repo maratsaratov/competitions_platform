@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты {{ competition }}{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Результаты соревнования: {{ competition }}</h1>
+    
+    <div class="action-buttons">
+        <a href="/organizer/{{ org_id }}/competition/{{ comp_id }}" class="btn btn-primary">Назад к соревнованию</a>
+        <a href="/organizer/{{ org_id }}/competitions" class="btn btn-secondary">Все соревнования</a>
+    </div>
+    
+    <div class="card">
+        <h3>Выставление баллов командам</h3>
+        <form method="post">
+            {% if teams_with_scores %}
+                {% for team in teams_with_scores %}
+                <div class="team-score-form">
+                    <h4>{{ team[1] }}</h4>
+                    <div class="score-input-group">
+                        <label for="points_{{ team[0] }}">Баллы:</label>
+                        <input type="number" id="points_{{ team[0] }}" name="points_{{ team[0] }}" 
+                               step="0.1" min="0" max="100" value="{{ team[2] }}" required>
+                        <span>Текущий средний балл: <strong>{{ "%.1f"|format(team[2]) }}</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-success">Сохранить результаты</button>
+                    <a href="/organizer/{{ org_id }}/competition/{{ comp_id }}" class="btn btn-secondary">Отмена</a>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>В этом соревновании пока нет зарегистрированных команд</p>
+                    <p>Участники должны зарегистрироваться на соревнование, чтобы появиться здесь</p>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

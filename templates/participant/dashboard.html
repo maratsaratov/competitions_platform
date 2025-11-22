@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет участника{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Личный кабинет участника</h1>
+    
+    <div class="card">
+        <h3>Мои данные</h3>
+        <p><strong>ФИО:</strong> {{ participant[0] }} {{ participant[1] }} {{ participant[2] }}</p>
+        <p><strong>Рейтинг:</strong> {{ participant[3] }}</p>
+        <p><strong>Место обучения:</strong> {{ participant[4] }}</p>
+        <p><strong>Команда:</strong> {{ team_name }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>Доступные соревнования</h3>
+        {% if available_competitions %}
+            <div class="competitions-list">
+                {% for comp in available_competitions %}
+                <div class="competition-item">
+                    <h4>{{ comp[1] }}</h4>
+                    <p><strong>Тип:</strong> {{ comp[2] }}</p>
+                    <a href="/participant/{{ part_id }}/competition/{{ comp[0] }}/register" class="btn btn-primary">
+                        Зарегистрироваться
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Нет доступных соревнований для регистрации</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3>Последние результаты</h3>
+        {% if recent_results %}
+            <div class="results-list">
+                {% for result in recent_results %}
+                <div class="result-item">
+                    <h4>{{ result[0] }}</h4>
+                    <p><strong>Место:</strong> {{ result[1] }}</p>
+                    <p><strong>Баллы:</strong> {{ result[2] }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Пока нет результатов</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <a href="/participant/{{ part_id }}/competitions" class="btn btn-primary">Все соревнования</a>
+        <a href="/participant/{{ part_id }}/results" class="btn btn-success">Мои результаты</a>
+    </div>
+</div>
+{% endblock %}

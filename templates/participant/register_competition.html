@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация на {{ competition[0] }}{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Регистрация на соревнование: {{ competition[0] }}</h2>
+    <p><strong>Тип:</strong> {{ competition[1] }}</p>
+    
+    <form method="post" class="auth-form">
+        <div class="form-radio-group">
+            <h3>Выберите вариант участия:</h3>
+            
+            <label>
+                <input type="radio" name="team_choice" value="no_team" required>
+                Участвовать индивидуально (без команды)
+            </label>
+            
+            <label>
+                <input type="radio" name="team_choice" value="new_team">
+                Создать новую команду
+            </label>
+            
+            <label>
+                <input type="radio" name="team_choice" value="existing_team">
+                Присоединиться к существующей команде
+            </label>
+        </div>
+
+        <!-- Поля для создания новой команды -->
+        <div id="new-team-fields" class="hidden-fields">
+            <div class="form-group">
+                <label for="team_name">Название команды:</label>
+                <input type="text" id="team_name" name="team_name" placeholder="Введите название команды">
+            </div>
+            <div class="form-group">
+                <label for="team_mentor">Ментор команды (необязательно):</label>
+                <input type="text" id="team_mentor" name="team_mentor" placeholder="ФИО ментора">
+            </div>
+        </div>
+
+        <!-- Поля для выбора существующей команды -->
+        <div id="existing-team-fields" class="hidden-fields">
+            <div class="form-group">
+                <label for="existing_team">Выберите команду:</label>
+                <select id="existing_team" name="team_choice">
+                    <option value="">Выберите команду</option>
+                    {% for team in available_teams %}
+                    <option value="{{ team[0] }}">{{ team[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-success">Зарегистрироваться</button>
+            <a href="/participant/{{ part_id }}/competitions" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

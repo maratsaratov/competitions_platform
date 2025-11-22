@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Панель организатора{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Панель организатора</h1>
+    <p>Добро пожаловать, {{ organizer[1] }} {{ organizer[0] }} {{ organizer[2] }}!</p>
+    <p><strong>Должность:</strong> {{ organizer[3] }}</p>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ comp_count }}</div>
+            <div class="stat-label">Соревнований</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ teams_count }}</div>
+            <div class="stat-label">Команд</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ participants_count }}</div>
+            <div class="stat-label">Участников</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Последние соревнования</h3>
+        {% if recent_competitions %}
+            <div class="competitions-list">
+                {% for comp in recent_competitions %}
+                <div class="competition-item">
+                    <h4>{{ comp[1] }}</h4>
+                    <p><strong>Тип:</strong> {{ comp[2] }}</p>
+                    <div class="action-buttons">
+                        <a href="/organizer/{{ org_id }}/competition/{{ comp[0] }}" class="btn btn-primary">Просмотр</a>
+                        <a href="/organizer/{{ org_id }}/competition/{{ comp[0] }}/results" class="btn btn-success">Выставить баллы</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Пока нет созданных соревнований</p>
+                <a href="/organizer/{{ org_id }}/competitions/add" class="btn btn-primary">Создать первое соревнование</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <a href="/organizer/{{ org_id }}/competitions" class="btn btn-primary">Все соревнования</a>
+        <a href="/organizer/{{ org_id }}/competitions/add" class="btn btn-success">Создать соревнование</a>
+    </div>
+</div>
+{% endblock %}

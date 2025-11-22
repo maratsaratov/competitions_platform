@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Создание соревнования{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Создание нового соревнования</h2>
+    <form method="post" class="auth-form">
+        <div class="form-group">
+            <label for="name">Название соревнования:</label>
+            <input type="text" id="name" name="name" placeholder="Введите название соревнования" required>
+        </div>
+
+        <div class="form-group">
+            <label for="type">Тип соревнования:</label>
+            <input type="text" id="type" name="type" placeholder="Например: Олимпиада, Хакатон, Турнир" required>
+        </div>
+
+        <div class="form-group">
+            <label for="location">Место проведения:</label>
+            <input type="text" id="location" name="location" placeholder="Место проведения соревнования" required>
+        </div>
+
+        <div class="form-group">
+            <label for="dates">Даты проведения:</label>
+            <input type="text" id="dates" name="dates" placeholder="Формат: ГГГГ-ММ-ДД - ГГГГ-ММ-ДД" required>
+            <small>Например: 2024-01-01 - 2024-01-05</small>
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-success">Создать соревнование</button>
+            <a href="/organizer/{{ org_id }}/competitions" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@
     <form method="post" class="auth-form">
         <div class="form-group">
             <label for="role">Роль:</label>
-            <select id="role" name="role" required onchange="toggleFields()">
+            <select id="role" name="role" required>
                 <option value="">Выберите роль</option>
                 <option value="organizer">Организатор</option>
                 <option value="participant">Участник</option>
@@ -20,7 +20,7 @@
 
         <div class="form-group">
             <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" placeholder="Придумайте пароль" required>
+            <input type="password" id="password" name="password" placeholder="Придумайте пароль (мин. 6 символов)" required>
         </div>
 
         <div class="form-group">
@@ -42,7 +42,7 @@
         <div id="organizer-fields" style="display: none;">
             <div class="form-group">
                 <label for="position">Должность:</label>
-                <input type="text" id="position" name="position" placeholder="Должность">
+                <input type="text" id="position" name="position" placeholder="Должность организатора">
             </div>
             <div class="form-group">
                 <label for="qualification">Квалификация:</label>
@@ -56,10 +56,6 @@
                 <label for="education">Место обучения:</label>
                 <input type="text" id="education" name="education" placeholder="Место обучения">
             </div>
-            <div class="form-group">
-                <label for="rating">Начальный рейтинг:</label>
-                <input type="number" id="rating" name="rating" value="0" min="0">
-            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
@@ -69,14 +65,4 @@
         Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a>
     </p>
 </div>
-
-<script>
-function toggleFields() {
-    const role = document.getElementById('role').value;
-    document.getElementById('organizer-fields').style.display = 
-        role === 'organizer' ? 'block' : 'none';
-    document.getElementById('participant-fields').style.display = 
-        role === 'participant' ? 'block' : 'none';
-}
-</script>
 {% endblock %}
