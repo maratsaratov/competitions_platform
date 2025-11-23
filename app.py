@@ -513,11 +513,22 @@ def participant_register_competition(part_id, comp_id):
         
         try:
             if team_choice == 'no_team':
-                # Регистрация без команды
+                # Создаем или получаем специальную команду для индивидуальных участников
+                individual_team_name = f"Индивидуальный_{part_id}_{comp_id}"
+                
+                # Создаем временную команду для индивидуального участника
+                cur.execute("""
+                    INSERT INTO Команда (Название, Ментор_команды) 
+                    VALUES (%s, 'Индивидуальный участник') 
+                    RETURNING ID_Команда
+                """, (individual_team_name,))
+                individual_team_id = cur.fetchone()[0]
+                
+                # Регистрируем в соревновании с индивидуальной командой (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
-                    VALUES (%s, %s, NULL, 0, 0)
-                """, (comp_id, part_id))
+                    VALUES (%s, %s, %s, NULL, 0)
+                """, (comp_id, part_id, individual_team_id))
             
             elif team_choice == 'new_team':
                 # Создание новой команды
@@ -541,10 +552,10 @@ def participant_register_competition(part_id, comp_id):
                 # Обновляем команду участника
                 cur.execute("UPDATE Участник SET ID_Команда = %s WHERE ID_Участник = %s", (new_team_id, part_id))
                 
-                # Регистрируем в соревновании
+                # Регистрируем в соревновании (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
-                    VALUES (%s, %s, %s, 0, 0)
+                    VALUES (%s, %s, %s, NULL, 0)
                 """, (comp_id, part_id, new_team_id))
             
             else:
@@ -554,10 +565,10 @@ def participant_register_competition(part_id, comp_id):
                 # Обновляем команду участника
                 cur.execute("UPDATE Участник SET ID_Команда = %s WHERE ID_Участник = %s", (team_id, part_id))
                 
-                # Регистрируем в соревновании
+                # Регистрируем в соревновании (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
-                    VALUES (%s, %s, %s, 0, 0)
+                    VALUES (%s, %s, %s, NULL, 0)
                 """, (comp_id, part_id, team_id))
             
             conn.commit()
