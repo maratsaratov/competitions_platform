@@ -342,29 +342,57 @@ def organizer_competition_results(org_id, comp_id):
     if request.method == 'POST':
         # Обработка выставления баллов
         try:
+            # Собираем баллы для всех команд
+            team_scores = {}
             for key, value in request.form.items():
                 if key.startswith('points_'):
                     team_id = key.replace('points_', '')
                     points = float(value) if value else 0.0
-                    
-                    # Обновляем баллы для всех участников команды в этом соревновании
-                    cur.execute("""
-                        UPDATE Результаты 
-                        SET Баллы = %s 
-                        WHERE ID_Соревнование = %s AND ID_Команда = %s
-                    """, (points, comp_id, team_id))
+                    team_scores[team_id] = points
+            
+            # Сортируем команды по баллам (по убыванию)
+            sorted_teams = sorted(team_scores.items(), key=lambda x: x[1], reverse=True)
+            
+            # Присваиваем места (учитывая ничьи)
+            current_place = 1
+            previous_score = None
+            skip_places = 0
+            
+            for i, (team_id, score) in enumerate(sorted_teams):
+                if score == previous_score:
+                    # Ничья - одинаковое место
+                    skip_places += 1
+                else:
+                    # Новое место
+                    current_place += skip_places
+                    skip_places = 0
+                    if i > 0:
+                        current_place += 1
+                
+                # Обновляем баллы и место для всех участников команды
+                cur.execute("""
+                    UPDATE Результаты 
+                    SET Баллы = %s, Место = %s
+                    WHERE ID_Соревнование = %s AND ID_Команда = %s
+                """, (score, current_place, comp_id, team_id))
+                
+                previous_score = score
             
             conn.commit()
-            flash('Баллы успешно обновлены! Соревнование завершено.', 'success')
+            flash('Баллы и места успешно обновлены! Соревнование завершено.', 'success')
             return redirect(f'/organizer/{org_id}/competitions')
         
         except Exception as e:
             conn.rollback()
             flash(f'Ошибка при обновлении баллов: {str(e)}', 'error')
     
-    # Получаем команды с текущими баллами
+    # Получаем команды с текущими баллами и местами
     cur.execute("""
-        SELECT к.ID_Команда, к.Название, COALESCE(AVG(р.Баллы), 0) as средние_баллы
+        SELECT 
+            к.ID_Команда, 
+            к.Название, 
+            COALESCE(AVG(р.Баллы), 0) as средние_баллы,
+            MIN(р.Место) as текущее_место
         FROM Команда к
         LEFT JOIN Результаты р ON к.ID_Команда = р.ID_Команда AND р.ID_Соревнование = %s
         WHERE к.ID_Команда IN (
