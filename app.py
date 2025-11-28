@@ -8,7 +8,6 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Утилиты для паролей
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
@@ -25,7 +24,6 @@ def is_valid_email(email):
 def get_db_connection():
     return psycopg2.connect(**app.config['DB_CONFIG'])
 
-# Главная страница
 @app.route('/')
 def index():
     if 'user_id' in session and 'role' in session:
@@ -36,7 +34,6 @@ def index():
     
     return render_template('index.html')
 
-# Страница входа
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
@@ -77,7 +74,6 @@ def login():
         cur.close()
         conn.close()
 
-# Страница регистрации
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
@@ -102,7 +98,6 @@ def register():
     cur = conn.cursor()
     
     try:
-        # Проверяем уникальность email (используем поле Фамилия)
         if role == 'organizer':
             cur.execute("SELECT 1 FROM Организатор WHERE Фамилия = %s", (email,))
         else:
@@ -135,11 +130,9 @@ def register():
             user_id = cur.fetchone()[0]
         
         conn.commit()
-        
         session['user_id'] = user_id
         session['role'] = role
         session['email'] = email
-        
         flash('Регистрация успешна!', 'success')
         
         if role == 'organizer':
@@ -155,16 +148,12 @@ def register():
         cur.close()
         conn.close()
 
-# Выход из системы
 @app.route('/logout')
 def logout():
     session.clear()
     flash('Вы вышли из системы', 'info')
     return redirect('/')
 
-# ФУНКЦИОНАЛ ОРГАНИЗАТОРА
-
-# Главная страница организатора
 @app.route('/organizer/<int:org_id>')
 def organizer_dashboard(org_id):
     if 'user_id' not in session or session['user_id'] != org_id or session['role'] != 'organizer':
@@ -172,22 +161,14 @@ def organizer_dashboard(org_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Информация об организаторе
     cur.execute("SELECT Фамилия, Имя, Отчество, Должность FROM Организатор WHERE ID_Организатор = %s", (org_id,))
     organizer = cur.fetchone()
-    
-    # Статистика
     cur.execute("SELECT COUNT(*) FROM Соревнование WHERE ID_Организатор = %s", (org_id,))
     comp_count = cur.fetchone()[0]
-    
     cur.execute("SELECT COUNT(*) FROM Команда")
     teams_count = cur.fetchone()[0]
-    
     cur.execute("SELECT COUNT(*) FROM Участник")
     participants_count = cur.fetchone()[0]
-    
-    # Последние соревнования
     cur.execute("""
         SELECT ID_Соревнование, Название, Тип_соревнования 
         FROM Соревнование 
@@ -195,7 +176,6 @@ def organizer_dashboard(org_id):
         ORDER BY ID_Соревнование DESC LIMIT 5
     """, (org_id,))
     recent_competitions = cur.fetchall()
-    
     cur.close()
     conn.close()
     
@@ -207,7 +187,6 @@ def organizer_dashboard(org_id):
                          participants_count=participants_count,
                          recent_competitions=recent_competitions)
 
-# Список соревнований организатора
 @app.route('/organizer/<int:org_id>/competitions')
 def organizer_competitions(org_id):
     if 'user_id' not in session or session['user_id'] != org_id or session['role'] != 'organizer':
@@ -215,8 +194,6 @@ def organizer_competitions(org_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Все соревнования организатора
     cur.execute("""
         SELECT ID_Соревнование, Название, Тип_соревнования, Место_проведения, Даты_проведения
         FROM Соревнование 
@@ -224,7 +201,6 @@ def organizer_competitions(org_id):
         ORDER BY ID_Соревнование DESC
     """, (org_id,))
     competitions = cur.fetchall()
-    
     cur.close()
     conn.close()
     
@@ -232,7 +208,6 @@ def organizer_competitions(org_id):
                          competitions=competitions,
                          org_id=org_id)
 
-# Создание нового соревнования
 @app.route('/organizer/<int:org_id>/competitions/add', methods=['GET', 'POST'])
 def organizer_add_competition(org_id):
     if 'user_id' not in session or session['user_id'] != org_id or session['role'] != 'organizer':
@@ -244,16 +219,12 @@ def organizer_add_competition(org_id):
     name = request.form['name']
     comp_type = request.form['type']
     location = request.form['location']
-    dates = request.form['dates']
-    
+    dates = request.form['dates']    
     conn = get_db_connection()
     cur = conn.cursor()
     
     try:
-        # Правильное форматирование диапазона дат для PostgreSQL
-        # Формат: '[2024-01-01,2024-01-05]'
         date_range = f"[{dates.replace(' - ', ',')}]"
-        
         cur.execute("""
             INSERT INTO Соревнование (ID_Организатор, Название, Тип_соревнования, Место_проведения, Даты_проведения)
             VALUES (%s, %s, %s, %s, %s)
@@ -271,7 +242,6 @@ def organizer_add_competition(org_id):
         cur.close()
         conn.close()
 
-# Детальная страница соревнования
 @app.route('/organizer/<int:org_id>/competition/<int:comp_id>')
 def organizer_competition_detail(org_id, comp_id):
     if 'user_id' not in session or session['user_id'] != org_id or session['role'] != 'organizer':
@@ -279,8 +249,6 @@ def organizer_competition_detail(org_id, comp_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Информация о соревновании
     cur.execute("""
         SELECT Название, Тип_соревнования, Место_проведения, Даты_проведения
         FROM Соревнование 
@@ -291,8 +259,7 @@ def organizer_competition_detail(org_id, comp_id):
     if not competition:
         flash('Соревнование не найдено', 'error')
         return redirect(f'/organizer/{org_id}/competitions')
-    
-    # Команды, участвующие в соревновании
+
     cur.execute("""
         SELECT DISTINCT к.ID_Команда, к.Название, COUNT(р.ID_Участник) as участников
         FROM Команда к
@@ -301,8 +268,6 @@ def organizer_competition_detail(org_id, comp_id):
         GROUP BY к.ID_Команда, к.Название
     """, (comp_id,))
     teams = cur.fetchall()
-    
-    # Участники без команды в этом соревновании
     cur.execute("""
         SELECT у.ID_Участник, у.Фамилия, у.Имя, у.Отчество, у.Рейтинг
         FROM Участник у
@@ -310,7 +275,6 @@ def organizer_competition_detail(org_id, comp_id):
         WHERE р.ID_Соревнование = %s AND у.ID_Команда IS NULL
     """, (comp_id,))
     participants_without_team = cur.fetchall()
-    
     cur.close()
     conn.close()
     
@@ -321,7 +285,6 @@ def organizer_competition_detail(org_id, comp_id):
                          teams=teams,
                          participants_without_team=participants_without_team)
 
-# Страница выставления баллов за соревнование
 @app.route('/organizer/<int:org_id>/competition/<int:comp_id>/results', methods=['GET', 'POST'])
 def organizer_competition_results(org_id, comp_id):
     if 'user_id' not in session or session['user_id'] != org_id or session['role'] != 'organizer':
@@ -329,8 +292,6 @@ def organizer_competition_results(org_id, comp_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Проверяем принадлежность соревнования
     cur.execute("SELECT Название FROM Соревнование WHERE ID_Соревнование = %s AND ID_Организатор = %s", 
                 (comp_id, org_id))
     competition = cur.fetchone()
@@ -340,36 +301,28 @@ def organizer_competition_results(org_id, comp_id):
         return redirect(f'/organizer/{org_id}/competitions')
     
     if request.method == 'POST':
-        # Обработка выставления баллов
         try:
-            # Собираем баллы для всех команд
             team_scores = {}
             for key, value in request.form.items():
                 if key.startswith('points_'):
                     team_id = key.replace('points_', '')
                     points = float(value) if value else 0.0
                     team_scores[team_id] = points
-            
-            # Сортируем команды по баллам (по убыванию)
+
             sorted_teams = sorted(team_scores.items(), key=lambda x: x[1], reverse=True)
-            
-            # Присваиваем места (учитывая ничьи)
             current_place = 1
             previous_score = None
             skip_places = 0
             
             for i, (team_id, score) in enumerate(sorted_teams):
                 if score == previous_score:
-                    # Ничья - одинаковое место
                     skip_places += 1
                 else:
-                    # Новое место
                     current_place += skip_places
                     skip_places = 0
                     if i > 0:
                         current_place += 1
-                
-                # Обновляем баллы и место для всех участников команды
+
                 cur.execute("""
                     UPDATE Результаты 
                     SET Баллы = %s, Место = %s
@@ -385,8 +338,7 @@ def organizer_competition_results(org_id, comp_id):
         except Exception as e:
             conn.rollback()
             flash(f'Ошибка при обновлении баллов: {str(e)}', 'error')
-    
-    # Получаем команды с текущими баллами и местами
+
     cur.execute("""
         SELECT 
             к.ID_Команда, 
@@ -402,7 +354,6 @@ def organizer_competition_results(org_id, comp_id):
         ORDER BY средние_баллы DESC
     """, (comp_id, comp_id))
     teams_with_scores = cur.fetchall()
-    
     cur.close()
     conn.close()
     
@@ -412,9 +363,6 @@ def organizer_competition_results(org_id, comp_id):
                          org_id=org_id,
                          teams_with_scores=teams_with_scores)
 
-# ФУНКЦИОНАЛ УЧАСТНИКА
-
-# Главная страница участника
 @app.route('/participant/<int:part_id>')
 def participant_dashboard(part_id):
     if 'user_id' not in session or session['user_id'] != part_id or session['role'] != 'participant':
@@ -422,23 +370,18 @@ def participant_dashboard(part_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Информация об участнике
     cur.execute("""
         SELECT Фамилия, Имя, Отчество, Рейтинг, Место_обучения, ID_Команда 
         FROM Участник WHERE ID_Участник = %s
     """, (part_id,))
     participant = cur.fetchone()
-    
-    # Команда участника
     team_name = "Не в команде"
     if participant[5]:
         cur.execute("SELECT Название FROM Команда WHERE ID_Команда = %s", (participant[5],))
         team_result = cur.fetchone()
         if team_result:
             team_name = team_result[0]
-    
-    # Активные соревнования (где участник еще не зарегистрирован)
+
     cur.execute("""
         SELECT с.ID_Соревнование, с.Название, с.Тип_соревнования
         FROM Соревнование с
@@ -449,8 +392,6 @@ def participant_dashboard(part_id):
         LIMIT 5
     """, (part_id,))
     available_competitions = cur.fetchall()
-    
-    # Последние результаты
     cur.execute("""
         SELECT с.Название, р.Место, р.Баллы 
         FROM Результаты р 
@@ -459,7 +400,6 @@ def participant_dashboard(part_id):
         ORDER BY р.ID_Результат DESC LIMIT 5
     """, (part_id,))
     recent_results = cur.fetchall()
-    
     cur.close()
     conn.close()
     
@@ -470,7 +410,6 @@ def participant_dashboard(part_id):
                          available_competitions=available_competitions,
                          recent_results=recent_results)
 
-# Страница соревнований для участника
 @app.route('/participant/<int:part_id>/competitions')
 def participant_competitions(part_id):
     if 'user_id' not in session or session['user_id'] != part_id or session['role'] != 'participant':
@@ -478,8 +417,6 @@ def participant_competitions(part_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Активные соревнования (где участник еще не зарегистрирован)
     cur.execute("""
         SELECT ID_Соревнование, Название, Тип_соревнования, Место_проведения
         FROM Соревнование 
@@ -489,8 +426,6 @@ def participant_competitions(part_id):
         ORDER BY ID_Соревнование DESC
     """, (part_id,))
     active_competitions = cur.fetchall()
-    
-    # Завершенные соревнования с результатами
     cur.execute("""
         SELECT с.Название, с.Тип_соревнования, р.Место, р.Баллы, к.Название as команда
         FROM Результаты р
@@ -509,7 +444,6 @@ def participant_competitions(part_id):
                          active_competitions=active_competitions,
                          completed_competitions=completed_competitions)
 
-# Регистрация на соревнование
 @app.route('/participant/<int:part_id>/competition/<int:comp_id>/register', methods=['GET', 'POST'])
 def participant_register_competition(part_id, comp_id):
     if 'user_id' not in session or session['user_id'] != part_id or session['role'] != 'participant':
@@ -517,8 +451,6 @@ def participant_register_competition(part_id, comp_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Информация о соревновании
     cur.execute("SELECT Название, Тип_соревнования FROM Соревнование WHERE ID_Соревнование = %s", (comp_id,))
     competition = cur.fetchone()
     
@@ -526,13 +458,11 @@ def participant_register_competition(part_id, comp_id):
         flash('Соревнование не найдено', 'error')
         return redirect(f'/participant/{part_id}/competitions')
     
-    # Проверяем, не зарегистрирован ли уже
     cur.execute("SELECT 1 FROM Результаты WHERE ID_Участник = %s AND ID_Соревнование = %s", (part_id, comp_id))
     if cur.fetchone():
         flash('Вы уже зарегистрированы на это соревнование', 'error')
         return redirect(f'/participant/{part_id}/competitions')
-    
-    # Доступные команды
+
     cur.execute("SELECT ID_Команда, Название FROM Команда ORDER BY Название")
     available_teams = cur.fetchall()
     
@@ -541,29 +471,21 @@ def participant_register_competition(part_id, comp_id):
         
         try:
             if team_choice == 'no_team':
-                # Создаем или получаем специальную команду для индивидуальных участников
                 individual_team_name = f"Индивидуальный_{part_id}_{comp_id}"
-                
-                # Создаем временную команду для индивидуального участника
                 cur.execute("""
                     INSERT INTO Команда (Название, Ментор_команды) 
                     VALUES (%s, 'Индивидуальный участник') 
                     RETURNING ID_Команда
                 """, (individual_team_name,))
                 individual_team_id = cur.fetchone()[0]
-                
-                # Регистрируем в соревновании с индивидуальной командой (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
                     VALUES (%s, %s, %s, NULL, 0)
                 """, (comp_id, part_id, individual_team_id))
             
             elif team_choice == 'new_team':
-                # Создание новой команды
                 team_name = request.form['team_name']
                 team_mentor = request.form.get('team_mentor', '')
-                
-                # Проверяем уникальность названия команды
                 cur.execute("SELECT 1 FROM Команда WHERE Название = %s", (team_name,))
                 if cur.fetchone():
                     flash('Команда с таким названием уже существует', 'error')
@@ -576,24 +498,15 @@ def participant_register_competition(part_id, comp_id):
                 cur.execute("INSERT INTO Команда (Название, Ментор_команды) VALUES (%s, %s) RETURNING ID_Команда", 
                            (team_name, team_mentor))
                 new_team_id = cur.fetchone()[0]
-                
-                # Обновляем команду участника
                 cur.execute("UPDATE Участник SET ID_Команда = %s WHERE ID_Участник = %s", (new_team_id, part_id))
-                
-                # Регистрируем в соревновании (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
                     VALUES (%s, %s, %s, NULL, 0)
                 """, (comp_id, part_id, new_team_id))
             
             else:
-                # Присоединение к существующей команде
                 team_id = int(team_choice)
-                
-                # Обновляем команду участника
                 cur.execute("UPDATE Участник SET ID_Команда = %s WHERE ID_Участник = %s", (team_id, part_id))
-                
-                # Регистрируем в соревновании (устанавливаем NULL для места)
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
                     VALUES (%s, %s, %s, NULL, 0)
@@ -616,7 +529,6 @@ def participant_register_competition(part_id, comp_id):
                          part_id=part_id,
                          available_teams=available_teams)
 
-# Страница результатов участника
 @app.route('/participant/<int:part_id>/results')
 def participant_results(part_id):
     if 'user_id' not in session or session['user_id'] != part_id or session['role'] != 'participant':
@@ -624,8 +536,6 @@ def participant_results(part_id):
     
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Все результаты участника
     cur.execute("""
         SELECT с.Название, с.Тип_соревнования, р.Место, р.Баллы, к.Название as команда
         FROM Результаты р
@@ -635,7 +545,6 @@ def participant_results(part_id):
         ORDER BY р.Баллы DESC
     """, (part_id,))
     results = cur.fetchall()
-    
     cur.close()
     conn.close()
     

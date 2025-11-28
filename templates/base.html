@@ -40,7 +40,6 @@
     </main>
 
     <script>
-        // Функция для показа/скрытия полей при выборе опции
         function toggleFields() {
             const role = document.getElementById('role');
             if (role) {
@@ -63,11 +62,8 @@
             }
         }
 
-        // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             toggleFields();
-            
-            // Обработчики для радиокнопок
             const radioButtons = document.querySelectorAll('input[type="radio"]');
             radioButtons.forEach(radio => {
                 radio.addEventListener('change', toggleFields);
