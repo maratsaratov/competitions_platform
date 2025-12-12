@@ -27,6 +27,7 @@
             </label>
         </div>
 
+        <!-- Поля для создания новой команды -->
         <div id="new-team-fields" class="hidden-fields">
             <div class="form-group">
                 <label for="team_name">Название команды:</label>
@@ -38,10 +39,11 @@
             </div>
         </div>
 
+        <!-- Поля для выбора существующей команды -->
         <div id="existing-team-fields" class="hidden-fields">
             <div class="form-group">
-                <label for="existing_team">Выберите команду:</label>
-                <select id="existing_team" name="team_choice">
+                <label for="existing_team_id">Выберите команду:</label>
+                <select id="existing_team_id" name="existing_team_id">
                     <option value="">Выберите команду</option>
                     {% for team in available_teams %}
                     <option value="{{ team[0] }}">{{ team[1] }}</option>
@@ -56,4 +58,33 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function toggleFields() {
+        const teamChoice = document.querySelector('input[name="team_choice"]:checked');
+        
+        if (teamChoice) {
+            const newTeamFields = document.getElementById('new-team-fields');
+            const existingTeamFields = document.getElementById('existing-team-fields');
+            
+            if (newTeamFields) {
+                newTeamFields.style.display = teamChoice.value === 'new_team' ? 'block' : 'none';
+            }
+            if (existingTeamFields) {
+                existingTeamFields.style.display = teamChoice.value === 'existing_team' ? 'block' : 'none';
+            }
+        }
+    }
+    
+    // Инициализация
+    toggleFields();
+    
+    // Обработчики изменений
+    const radioButtons = document.querySelectorAll('input[name="team_choice"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', toggleFields);
+    });
+});
+</script>
 {% endblock %}

@@ -457,12 +457,12 @@ def participant_register_competition(part_id, comp_id):
     if not competition:
         flash('Соревнование не найдено', 'error')
         return redirect(f'/participant/{part_id}/competitions')
-    
+ 
     cur.execute("SELECT 1 FROM Результаты WHERE ID_Участник = %s AND ID_Соревнование = %s", (part_id, comp_id))
     if cur.fetchone():
         flash('Вы уже зарегистрированы на это соревнование', 'error')
         return redirect(f'/participant/{part_id}/competitions')
-
+    
     cur.execute("SELECT ID_Команда, Название FROM Команда ORDER BY Название")
     available_teams = cur.fetchall()
     
@@ -505,7 +505,28 @@ def participant_register_competition(part_id, comp_id):
                 """, (comp_id, part_id, new_team_id))
             
             else:
-                team_id = int(team_choice)
+                if team_choice == 'existing_team':
+                    team_id = request.form.get('existing_team_id')
+                    if not team_id:
+                        flash('Не выбрана команда для присоединения', 'error')
+                        return render_template('participant/register_competition.html',
+                                             competition=competition,
+                                             comp_id=comp_id,
+                                             part_id=part_id,
+                                             available_teams=available_teams)
+                    team_id = int(team_id)
+                else:
+                    team_id = int(team_choice)
+                
+                cur.execute("SELECT 1 FROM Команда WHERE ID_Команда = %s", (team_id,))
+                if not cur.fetchone():
+                    flash('Выбранная команда не найдена', 'error')
+                    return render_template('participant/register_competition.html',
+                                         competition=competition,
+                                         comp_id=comp_id,
+                                         part_id=part_id,
+                                         available_teams=available_teams)
+                
                 cur.execute("UPDATE Участник SET ID_Команда = %s WHERE ID_Участник = %s", (team_id, part_id))
                 cur.execute("""
                     INSERT INTO Результаты (ID_Соревнование, ID_Участник, ID_Команда, Место, Баллы)
@@ -516,6 +537,9 @@ def participant_register_competition(part_id, comp_id):
             flash('Регистрация на соревнование прошла успешно!', 'success')
             return redirect(f'/participant/{part_id}/competitions')
         
+        except ValueError:
+            conn.rollback()
+            flash('Ошибка: Неверный формат данных команды', 'error')
         except Exception as e:
             conn.rollback()
             flash(f'Ошибка при регистрации: {str(e)}', 'error')
