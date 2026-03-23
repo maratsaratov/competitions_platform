@@ -4,29 +4,31 @@ import api from "../api/client";
 import s from "./AddTournament.module.css";
 
 const CATEGORIES = ["A+100","A+75","B+50","B+30","C+20","C+10"];
-const PAIR_COUNTS = [4,6,8,9,10,12,16,20,24,32];
-
-function groupPreview(n) {
-  const g = Math.max(2, Math.ceil(n/4));
-  const p = Math.ceil(n/g);
-  return `${g} группы × ${p} пар`;
-}
 
 export default function AddTournament() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title:"", category:"", category_type:"", description:"",
-    start_date:"", end_date:"", location:"", total_pairs:"8", bracket_size:"8"
+    start_date:"", end_date:"", location:"",
+    num_groups:"2", pairs_per_group:"4", bracket_size:"8"
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const totalPairs = +form.num_groups * +form.pairs_per_group;
+  const minBracket = Math.pow(2, Math.ceil(Math.log2(+form.num_groups || 2)));
+
   const submit = async (e) => {
     e.preventDefault(); setError(""); setLoading(true);
     try {
-      const r = await api.post("/tournaments", { ...form, total_pairs: +form.total_pairs, bracket_size: +form.bracket_size });
+      const r = await api.post("/tournaments", {
+        ...form,
+        num_groups: +form.num_groups,
+        pairs_per_group: +form.pairs_per_group,
+        bracket_size: +form.bracket_size,
+      });
       navigate(`/tournaments/${r.data.id}`);
     } catch (err) {
       setError(err.response?.data?.error || "Ошибка создания турнира");
@@ -69,29 +71,36 @@ export default function AddTournament() {
           <div className={s.group}><label>Описание</label><textarea rows={4} value={form.description} onChange={set("description")} placeholder="Опишите турнир, правила, призы..."/></div>
 
           <div className={s.sectionLabel}>Место и время</div>
-          <div className={s.group}><label>Место проведения</label><input value={form.location} onChange={set("location")} placeholder='Москва, PadelHub Арена'/></div>
+          <div className={s.group}><label>Место проведения</label><input value={form.location} onChange={set("location")} placeholder="Москва, PadelHub Арена"/></div>
           <div className={s.row}>
             <div className={s.group}><label>Дата начала</label><input type="date" value={form.start_date} onChange={set("start_date")}/></div>
             <div className={s.group}><label>Дата окончания</label><input type="date" value={form.end_date} onChange={set("end_date")}/></div>
           </div>
 
           <div className={s.sectionLabel}>Формат</div>
+          <div className={s.formatNote}>
+            Задайте количество групп и пар в каждой группе. Итого участников: <strong>{totalPairs}</strong>.
+            После регистрации параметры можно изменить на странице турнира.
+          </div>
           <div className={s.row}>
             <div className={s.group}>
-              <label>Количество пар</label>
-              <select value={form.total_pairs} onChange={set("total_pairs")}>
-                {PAIR_COUNTS.map(n=><option key={n} value={n}>{n} пар</option>)}
-              </select>
-              <span className={s.hint}>→ {groupPreview(+form.total_pairs)}</span>
+              <label>Количество групп</label>
+              <input type="number" min="1" max="16" value={form.num_groups} onChange={set("num_groups")}/>
             </div>
+            <div className={s.group}>
+              <label>Пар в каждой группе</label>
+              <input type="number" min="2" max="12" value={form.pairs_per_group} onChange={set("pairs_per_group")}/>
+            </div>
+          </div>
+          <div className={s.row}>
             <div className={s.group}>
               <label>Размер плей-офф сетки</label>
               <select value={form.bracket_size} onChange={set("bracket_size")}>
-                <option value="4">4 (полуфинал)</option>
-                <option value="8">8 (четвертьфинал)</option>
-                <option value="16">16</option>
-                <option value="32">32</option>
+                {[2,4,8,16,32].filter(n => n >= minBracket).map(n => (
+                  <option key={n} value={n}>{n} {n===2?"(финал)":n===4?"(полуфинал)":n===8?"(четвертьфинал)":""}</option>
+                ))}
               </select>
+              <span className={s.hint}>Минимум {minBracket} — по одному победителю из каждой группы</span>
             </div>
           </div>
 

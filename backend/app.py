@@ -45,22 +45,27 @@ def q(sql, params=None, fetchone=False, fetchall=False, commit=False, returning=
         conn.close()
 
 
-def serialize(obj):
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
-    return str(obj)
-
-
 def rows_to_list(rows):
     if not rows:
         return []
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        for k, v in d.items():
+            if isinstance(v, (datetime, date)):
+                d[k] = v.isoformat()
+        result.append(d)
+    return result
 
 
 def row_to_dict(row):
     if not row:
         return None
-    return dict(row)
+    d = dict(row)
+    for k, v in d.items():
+        if isinstance(v, (datetime, date)):
+            d[k] = v.isoformat()
+    return d
 
 
 def login_required(f):
@@ -182,14 +187,7 @@ def get_tournaments():
         sql += " AND t.category_type=%s"; params.append(t_type)
     sql += " ORDER BY t.start_date DESC NULLS LAST"
     rows = q(sql, params or None, fetchall=True)
-    result = []
-    for r in (rows or []):
-        d = dict(r)
-        for k, v in d.items():
-            if isinstance(v, (datetime, date)):
-                d[k] = v.isoformat()
-        result.append(d)
-    return jsonify(result)
+    return jsonify(rows_to_list(rows))
 
 
 @app.route("/api/tournaments/<int:tid>")
@@ -198,37 +196,28 @@ def get_tournament(tid):
     t = q("SELECT * FROM tournaments WHERE id=%s", (tid,), fetchone=True)
     if not t:
         return jsonify({"error": "Не найдено"}), 404
-    d = dict(t)
-    for k, v in d.items():
-        if isinstance(v, (datetime, date)):
-            d[k] = v.isoformat()
-
-    pairs = rows_to_list(q("SELECT * FROM tournament_pairs WHERE tournament_id=%s ORDER BY group_number, id", (tid,), fetchall=True))
-    group_matches = rows_to_list(q("""
-        SELECT gm.*, p1.player1_name as p1_name, p1.player2_name as p1_name2,
+    d = row_to_dict(t)
+    d["pairs"] = rows_to_list(q(
+        "SELECT * FROM tournament_pairs WHERE tournament_id=%s ORDER BY group_number, id",
+        (tid,), fetchall=True))
+    d["group_matches"] = rows_to_list(q("""
+        SELECT gm.*,
+               p1.player1_name as p1_name, p1.player2_name as p1_name2,
                p2.player1_name as p2_name, p2.player2_name as p2_name2
         FROM group_matches gm
         LEFT JOIN tournament_pairs p1 ON gm.pair1_id=p1.id
         LEFT JOIN tournament_pairs p2 ON gm.pair2_id=p2.id
-        WHERE gm.tournament_id=%s ORDER BY gm.group_number
+        WHERE gm.tournament_id=%s ORDER BY gm.group_number, gm.id
     """, (tid,), fetchall=True))
-    bracket = rows_to_list(q("""
-        SELECT bm.*, p1.player1_name as p1_name, p1.player2_name as p1_name2,
+    d["bracket"] = rows_to_list(q("""
+        SELECT bm.*,
+               p1.player1_name as p1_name, p1.player2_name as p1_name2,
                p2.player1_name as p2_name, p2.player2_name as p2_name2
         FROM bracket_matches bm
         LEFT JOIN tournament_pairs p1 ON bm.pair1_id=p1.id
         LEFT JOIN tournament_pairs p2 ON bm.pair2_id=p2.id
         WHERE bm.tournament_id=%s ORDER BY bm.round DESC, bm.match_number
     """, (tid,), fetchall=True))
-
-    for m in group_matches:
-        for k, v in m.items():
-            if isinstance(v, (datetime, date)):
-                m[k] = v.isoformat()
-
-    d["pairs"] = pairs
-    d["group_matches"] = group_matches
-    d["bracket"] = bracket
     return jsonify(d)
 
 
@@ -240,10 +229,15 @@ def create_tournament():
     if not title:
         return jsonify({"error": "Название обязательно"}), 400
 
-    total_pairs = int(data.get("total_pairs", 8))
-    groups = max(2, math.ceil(total_pairs / 4))
-    pairs_per_group = math.ceil(total_pairs / groups)
-    group_format = json.dumps({"total_pairs": total_pairs, "groups": groups, "pairs_per_group": pairs_per_group})
+    # group_format now comes fully from frontend (num_groups + pairs_per_group editable)
+    num_groups = int(data.get("num_groups", 2))
+    pairs_per_group = int(data.get("pairs_per_group", 4))
+    total_pairs = num_groups * pairs_per_group
+    group_format = json.dumps({
+        "total_pairs": total_pairs,
+        "groups": num_groups,
+        "pairs_per_group": pairs_per_group
+    })
 
     conn = get_db()
     try:
@@ -254,12 +248,30 @@ def create_tournament():
                 (title, data.get("category",""), data.get("category_type",""),
                  data.get("description",""), data.get("start_date") or None,
                  data.get("end_date") or None, data.get("location",""),
-                 group_format, int(data.get("bracket_size",8)), session["user_id"]))
+                 group_format, int(data.get("bracket_size", 8)), session["user_id"]))
             tid = cur.fetchone()["id"]
             conn.commit()
         return jsonify({"id": tid}), 201
     finally:
         conn.close()
+
+
+@app.route("/api/tournaments/<int:tid>/format", methods=["PUT"])
+@superuser_required
+def update_tournament_format(tid):
+    """Update group format after creation (e.g. actual registrations differ)"""
+    data = request.get_json()
+    num_groups = int(data.get("num_groups", 2))
+    pairs_per_group = int(data.get("pairs_per_group", 4))
+    total_pairs = num_groups * pairs_per_group
+    group_format = json.dumps({
+        "total_pairs": total_pairs,
+        "groups": num_groups,
+        "pairs_per_group": pairs_per_group
+    })
+    q("UPDATE tournaments SET group_format=%s, bracket_size=%s WHERE id=%s",
+      (group_format, int(data.get("bracket_size", 8)), tid), commit=True)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/tournaments/<int:tid>/status", methods=["PUT"])
@@ -285,10 +297,258 @@ def add_pair(tid):
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("""INSERT INTO tournament_pairs (tournament_id, player1_name, player2_name, group_number)
                            VALUES (%s,%s,%s,%s) RETURNING id""",
-                        (tid, player1, data.get("player2_name","") or None, data.get("group_number") or None))
+                        (tid, player1, data.get("player2_name","") or None,
+                         data.get("group_number") or None))
             pid = cur.fetchone()["id"]
             conn.commit()
         return jsonify({"id": pid}), 201
+    finally:
+        conn.close()
+
+
+@app.route("/api/tournaments/<int:tid>/pairs/<int:pid>", methods=["DELETE"])
+@superuser_required
+def delete_pair(tid, pid):
+    q("DELETE FROM tournament_pairs WHERE id=%s AND tournament_id=%s", (pid, tid), commit=True)
+    return jsonify({"ok": True})
+
+
+# ── GROUP MATCHES ─────────────────────────────────────────────────────────────
+
+@app.route("/api/tournaments/<int:tid>/group_matches/generate", methods=["POST"])
+@superuser_required
+def generate_group_matches(tid):
+    """Generate round-robin matches for all groups"""
+    pairs = q("SELECT * FROM tournament_pairs WHERE tournament_id=%s AND group_number IS NOT NULL ORDER BY group_number, id",
+              (tid,), fetchall=True)
+    if not pairs:
+        return jsonify({"error": "Нет участников с назначенными группами"}), 400
+
+    # Group pairs by group_number
+    groups = {}
+    for p in pairs:
+        g = p["group_number"]
+        if g not in groups:
+            groups[g] = []
+        groups[g].append(p)
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            # Clear existing group matches
+            cur.execute("DELETE FROM group_matches WHERE tournament_id=%s", (tid,))
+            count = 0
+            for g_num, g_pairs in groups.items():
+                # Round-robin: every pair plays every other pair
+                for i in range(len(g_pairs)):
+                    for j in range(i + 1, len(g_pairs)):
+                        cur.execute("""INSERT INTO group_matches
+                            (tournament_id, group_number, pair1_id, pair2_id)
+                            VALUES (%s,%s,%s,%s)""",
+                            (tid, g_num, g_pairs[i]["id"], g_pairs[j]["id"]))
+                        count += 1
+            conn.commit()
+        return jsonify({"generated": count})
+    finally:
+        conn.close()
+
+
+@app.route("/api/tournaments/<int:tid>/group_matches/<int:mid>/score", methods=["PUT"])
+@superuser_required
+def set_group_match_score(tid, mid):
+    """Set score for a group match and determine winner"""
+    data = request.get_json()
+    score1 = (data.get("score_pair1") or "").strip()
+    score2 = (data.get("score_pair2") or "").strip()
+
+    match = q("SELECT * FROM group_matches WHERE id=%s AND tournament_id=%s", (mid, tid), fetchone=True)
+    if not match:
+        return jsonify({"error": "Матч не найден"}), 404
+
+    # Determine winner: parse scores like "6:3 6:4" — count sets won
+    winner_id = None
+    if score1 and score2:
+        winner_id = _determine_winner(match["pair1_id"], match["pair2_id"], score1, score2)
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""UPDATE group_matches
+                SET score_pair1=%s, score_pair2=%s, winner_pair_id=%s, played_at=NOW()
+                WHERE id=%s""",
+                (score1, score2, winner_id, mid))
+            conn.commit()
+        return jsonify({"ok": True, "winner_pair_id": winner_id})
+    finally:
+        conn.close()
+
+
+def _determine_winner(pair1_id, pair2_id, score1_str, score2_str):
+    """Parse scores like '6:3 6:4' and return winning pair id"""
+    try:
+        sets1 = score1_str.strip().split()
+        sets2 = score2_str.strip().split()
+        wins1, wins2 = 0, 0
+        for s in sets1:
+            parts = s.replace("-", ":").split(":")
+            if len(parts) == 2 and int(parts[0]) > int(parts[1]):
+                wins1 += 1
+        for s in sets2:
+            parts = s.replace("-", ":").split(":")
+            if len(parts) == 2 and int(parts[0]) > int(parts[1]):
+                wins2 += 1
+        if wins1 > wins2:
+            return pair1_id
+        elif wins2 > wins1:
+            return pair2_id
+    except Exception:
+        pass
+    return None
+
+
+# ── BRACKET GENERATION ────────────────────────────────────────────────────────
+
+@app.route("/api/tournaments/<int:tid>/bracket/generate", methods=["POST"])
+@superuser_required
+def generate_bracket(tid):
+    """Generate playoff bracket from group stage results.
+    Top N pairs from each group advance (N = bracket_size / num_groups).
+    """
+    t = q("SELECT * FROM tournaments WHERE id=%s", (tid,), fetchone=True)
+    if not t:
+        return jsonify({"error": "Турнир не найден"}), 404
+
+    bracket_size = t["bracket_size"]
+    gf = t["group_format"] or {}
+    num_groups = gf.get("groups", 2)
+
+    # Build group standings from match results
+    pairs = q("SELECT * FROM tournament_pairs WHERE tournament_id=%s AND group_number IS NOT NULL",
+              (tid,), fetchall=True)
+    matches = q("SELECT * FROM group_matches WHERE tournament_id=%s", (tid,), fetchall=True)
+
+    # Calculate wins/losses per pair
+    stats = {}  # pair_id -> {wins, losses, points_for, points_against}
+    for p in (pairs or []):
+        stats[p["id"]] = {"pair": p, "wins": 0, "losses": 0}
+
+    for m in (matches or []):
+        if not m["winner_pair_id"]:
+            continue
+        loser_id = m["pair2_id"] if m["winner_pair_id"] == m["pair1_id"] else m["pair1_id"]
+        if m["winner_pair_id"] in stats:
+            stats[m["winner_pair_id"]]["wins"] += 1
+        if loser_id in stats:
+            stats[loser_id]["losses"] += 1
+
+    # Group standings: sort by wins desc
+    groups = {}
+    for pid, s in stats.items():
+        g = s["pair"]["group_number"]
+        if g not in groups:
+            groups[g] = []
+        groups[g].append(s)
+
+    for g in groups:
+        groups[g].sort(key=lambda x: x["wins"], reverse=True)
+
+    # How many advance per group
+    advance_per_group = max(1, bracket_size // num_groups)
+
+    # Collect advancers: top N from each group
+    advancers = []
+    for g_num in sorted(groups.keys()):
+        advancers.extend(groups[g_num][:advance_per_group])
+
+    # Pad to bracket_size if needed
+    while len(advancers) < bracket_size:
+        advancers.append(None)
+    advancers = advancers[:bracket_size]
+
+    # Build bracket rounds
+    # Round 1 = first round (e.g. quarterfinals for bracket_size=8)
+    # Round log2(bracket_size) = first round matches
+    # Round 1 = Final
+    num_rounds = int(math.log2(bracket_size)) if bracket_size > 1 else 1
+    first_round = num_rounds  # highest number = earliest round
+
+    # Seed the bracket: 1v(last), 2v(second last), etc.
+    # Seeds: [1,2,3,...,n] -> match 1: seed1 vs seed(n), match2: seed2 vs seed(n-1)
+    seeds = advancers  # already ordered by group performance
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM bracket_matches WHERE tournament_id=%s", (tid,))
+
+            match_count = bracket_size // 2
+            for i in range(match_count):
+                pair1 = seeds[i]
+                pair2 = seeds[bracket_size - 1 - i]
+                p1_id = pair1["pair"]["id"] if pair1 else None
+                p2_id = pair2["pair"]["id"] if pair2 else None
+                cur.execute("""INSERT INTO bracket_matches
+                    (tournament_id, round, match_number, pair1_id, pair2_id)
+                    VALUES (%s,%s,%s,%s,%s)""",
+                    (tid, first_round, i + 1, p1_id, p2_id))
+
+            # Create empty slots for subsequent rounds
+            for rnd in range(first_round - 1, 0, -1):
+                rnd_matches = 2 ** (rnd - 1)
+                for mn in range(1, rnd_matches + 1):
+                    cur.execute("""INSERT INTO bracket_matches
+                        (tournament_id, round, match_number)
+                        VALUES (%s,%s,%s)""",
+                        (tid, rnd, mn))
+
+            conn.commit()
+        return jsonify({"ok": True, "advancers": len([a for a in advancers if a])})
+    finally:
+        conn.close()
+
+
+@app.route("/api/tournaments/<int:tid>/bracket/<int:mid>/score", methods=["PUT"])
+@superuser_required
+def set_bracket_score(tid, mid):
+    """Set score for a bracket match and propagate winner to next round"""
+    data = request.get_json()
+    score1 = (data.get("score_pair1") or "").strip()
+    score2 = (data.get("score_pair2") or "").strip()
+
+    match = q("SELECT * FROM bracket_matches WHERE id=%s AND tournament_id=%s", (mid, tid), fetchone=True)
+    if not match:
+        return jsonify({"error": "Матч не найден"}), 404
+
+    winner_id = None
+    if score1 and score2:
+        winner_id = _determine_winner(match["pair1_id"], match["pair2_id"], score1, score2)
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""UPDATE bracket_matches
+                SET score_pair1=%s, score_pair2=%s, winner_pair_id=%s
+                WHERE id=%s""",
+                (score1, score2, winner_id, mid))
+
+            # Propagate winner to next round
+            if winner_id and match["round"] > 1:
+                next_round = match["round"] - 1
+                next_match_num = math.ceil(match["match_number"] / 2)
+                next_match = q("""SELECT * FROM bracket_matches
+                    WHERE tournament_id=%s AND round=%s AND match_number=%s""",
+                    (tid, next_round, next_match_num), fetchone=True)
+                if next_match:
+                    # odd match_number -> pair1 slot, even -> pair2 slot
+                    if match["match_number"] % 2 == 1:
+                        cur.execute("UPDATE bracket_matches SET pair1_id=%s WHERE id=%s",
+                                    (winner_id, next_match["id"]))
+                    else:
+                        cur.execute("UPDATE bracket_matches SET pair2_id=%s WHERE id=%s",
+                                    (winner_id, next_match["id"]))
+
+            conn.commit()
+        return jsonify({"ok": True, "winner_pair_id": winner_id})
     finally:
         conn.close()
 
@@ -313,11 +573,8 @@ def get_ratings():
     rows = q(sql, params or None, fetchall=True)
     result = []
     for i, r in enumerate(rows or []):
-        d = dict(r)
+        d = row_to_dict(r)
         d["rank"] = i + 1
-        for k, v in d.items():
-            if isinstance(v, (datetime, date)):
-                d[k] = v.isoformat()
         result.append(d)
     return jsonify(result)
 
@@ -343,20 +600,13 @@ def import_ratings():
         col_map = {}
         for col in df.columns:
             lc = str(col).lower()
-            if any(x in lc for x in ["фио","имя","name"]):
-                col_map["full_name"] = col
-            elif any(x in lc for x in ["место","place","rank"]):
-                col_map["place"] = col
-            elif any(x in lc for x in ["город","city"]):
-                col_map["city"] = col
-            elif any(x in lc for x in ["уровень","level"]):
-                col_map["level"] = col
-            elif any(x in lc for x in ["очк","балл","point"]):
-                col_map["total_points"] = col
-            elif any(x in lc for x in ["турнир","tournament"]):
-                col_map["tournaments_played"] = col
-            elif any(x in lc for x in ["пол","gender","sex"]):
-                col_map["gender"] = col
+            if any(x in lc for x in ["фио","имя","name"]): col_map["full_name"] = col
+            elif any(x in lc for x in ["место","place","rank"]): col_map["place"] = col
+            elif any(x in lc for x in ["город","city"]): col_map["city"] = col
+            elif any(x in lc for x in ["уровень","level"]): col_map["level"] = col
+            elif any(x in lc for x in ["очк","балл","point"]): col_map["total_points"] = col
+            elif any(x in lc for x in ["турнир","tournament"]): col_map["tournaments_played"] = col
+            elif any(x in lc for x in ["пол","gender","sex"]): col_map["gender"] = col
 
         conn = get_db()
         inserted = 0
@@ -391,14 +641,7 @@ def import_ratings():
 @superuser_required
 def admin_users():
     rows = q("SELECT u.id, u.email, u.is_superuser, u.created_at, p.full_name FROM users u LEFT JOIN profiles p ON u.id=p.user_id ORDER BY u.id", fetchall=True)
-    result = []
-    for r in (rows or []):
-        d = dict(r)
-        for k, v in d.items():
-            if isinstance(v, (datetime, date)):
-                d[k] = v.isoformat()
-        result.append(d)
-    return jsonify(result)
+    return jsonify(rows_to_list(rows))
 
 
 @app.route("/api/admin/users/<int:uid>/toggle_super", methods=["POST"])
