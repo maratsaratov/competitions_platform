@@ -1,0 +1,54 @@
+.root { display:flex; flex-direction:column; gap:1.5rem; }
+.header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.title { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; letter-spacing:.03em; line-height:1.1; }
+.sub { color:#7d8590; font-size:.95rem; margin-top:.25rem; }
+.importWrap { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+.importOk { font-size:.82rem; color:#58e6a0; }
+.importErr { font-size:.82rem; color:#f85149; }
+.btnOutline { border:1px solid #58e6a0; color:#58e6a0; background:none; padding:.55rem 1.1rem; border-radius:6px; font-size:.85rem; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.btnOutline:hover:not(:disabled) { background:rgba(88,230,160,.1); }
+.btnOutline:disabled { opacity:.6; cursor:not-allowed; }
+
+.controls { display:flex; flex-direction:column; gap:.75rem; }
+.searchWrap { position:relative; max-width:420px; }
+.searchIcon { position:absolute; left:.9rem; top:50%; transform:translateY(-50%); font-size:.9rem; }
+.search { width:100%; background:#161b22; border:1px solid #30363d; color:#e6edf3; padding:.65rem .9rem .65rem 2.5rem; border-radius:8px; font-family:inherit; font-size:.92rem; outline:none; transition:border-color .15s,box-shadow .15s; }
+.search:focus { border-color:#58e6a0; box-shadow:0 0 0 3px rgba(88,230,160,.1); }
+.search::placeholder { color:#484f58; }
+.clearBtn { position:absolute; right:.75rem; top:50%; transform:translateY(-50%); background:none; border:none; color:#7d8590; font-size:1.1rem; cursor:pointer; line-height:1; padding:.2rem; }
+.filterRow { display:flex; flex-direction:column; gap:.5rem; }
+.pills { display:flex; flex-wrap:wrap; gap:.4rem; }
+.pill { background:#161b22; border:1px solid #30363d; color:#7d8590; padding:.28rem .8rem; border-radius:20px; font-size:.8rem; font-weight:500; cursor:pointer; transition:all .15s; }
+.pill:hover { border-color:#7d8590; color:#e6edf3; }
+.pillActive { background:rgba(88,230,160,.1); border-color:#58e6a0; color:#58e6a0; }
+
+.loaderWrap { display:flex; justify-content:center; padding:4rem; }
+
+.tableWrap { overflow-x:auto; border:1px solid #21262d; border-radius:10px; }
+.table { width:100%; border-collapse:collapse; }
+.table thead { background:#161b22; }
+.table th { padding:.7rem 1rem; text-align:left; font-size:.72rem; font-weight:600; color:#7d8590; text-transform:uppercase; letter-spacing:.07em; border-bottom:1px solid #21262d; white-space:nowrap; }
+.thPlace { width:56px; text-align:center; }
+.thPoints { text-align:right; }
+.table td { padding:.85rem 1rem; border-bottom:1px solid #21262d; font-size:.9rem; }
+.table tbody tr:last-child td { border-bottom:none; }
+.table tbody tr { transition:background .1s; }
+.table tbody tr:hover { background:rgba(255,255,255,.02); }
+.top1 td { background:rgba(210,153,34,.04) !important; }
+.top2 td { background:rgba(160,160,170,.04) !important; }
+.top3 td { background:rgba(180,100,50,.04) !important; }
+
+.tdPlace { text-align:center; }
+.medal { font-size:1.3rem; }
+.placeNum { font-size:.85rem; color:#7d8590; font-weight:600; }
+.playerName { font-weight:500; color:#e6edf3; }
+.playerGender { font-size:.72rem; color:#7d8590; margin-top:.1rem; }
+.city { color:#7d8590; font-size:.87rem; }
+.levelBadge { background:rgba(88,230,160,.1); color:#58e6a0; border:1px solid rgba(88,230,160,.25); font-size:.72rem; font-weight:600; padding:.18rem .5rem; border-radius:4px; }
+.tdPoints { text-align:right; font-size:.95rem; font-weight:600; color:#e6edf3; }
+.tdTournaments { color:#7d8590; font-size:.87rem; }
+
+.empty { text-align:center; padding:4rem; display:flex; flex-direction:column; align-items:center; gap:.75rem; }
+.emptyIcon { font-size:2.5rem; }
+.empty h3 { font-size:1.1rem; color:#e6edf3; }
+.empty p { color:#7d8590; font-size:.9rem; }

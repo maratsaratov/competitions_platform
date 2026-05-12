@@ -1,0 +1,43 @@
+.root { min-height: 100vh; display: flex; flex-direction: column; background: #0d0f12; }
+
+.nav { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 2.5rem; position:sticky; top:0; z-index:10; background:rgba(13,15,18,0.85); backdrop-filter:blur(16px); border-bottom:1px solid #21262d; }
+.logo { display:flex; align-items:center; gap:0.5rem; }
+.logoIcon { font-size:1.4rem; color:#58e6a0; }
+.logoText { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:.05em; color:#e6edf3; }
+.logoText em { color:#58e6a0; font-style:normal; }
+.navRight { display:flex; gap:.75rem; }
+.btnGhost { border:1px solid #30363d; color:#7d8590; padding:.5rem 1.1rem; border-radius:6px; font-size:.9rem; text-decoration:none; transition:all .15s; }
+.btnGhost:hover { border-color:#7d8590; color:#e6edf3; }
+.btnPrimary { background:#58e6a0; color:#000; padding:.5rem 1.2rem; border-radius:6px; font-weight:600; font-size:.9rem; text-decoration:none; transition:all .15s; }
+.btnPrimary:hover { background:#3ecf8e; }
+
+.hero { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:5rem 2rem 3rem; overflow:hidden; min-height:85vh; }
+.heroBg { position:absolute; inset:0; pointer-events:none; }
+.grid { position:absolute; inset:0; background-image:linear-gradient(rgba(88,230,160,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(88,230,160,.04) 1px,transparent 1px); background-size:60px 60px; }
+.glow { position:absolute; top:20%; left:50%; transform:translateX(-50%); width:600px; height:400px; background:radial-gradient(ellipse,rgba(88,230,160,.12) 0%,transparent 70%); filter:blur(40px); }
+.heroContent { position:relative; text-align:center; max-width:700px; }
+.heroTag { font-size:.8rem; font-weight:600; letter-spacing:.12em; color:#58e6a0; text-transform:uppercase; margin-bottom:1.5rem; }
+.heroTitle { font-family:'Bebas Neue',sans-serif; font-size:clamp(4rem,12vw,9rem); line-height:.9; letter-spacing:.02em; margin-bottom:1.5rem; display:flex; flex-direction:column; }
+.accent { color:#58e6a0; -webkit-text-stroke:2px #58e6a0; }
+.heroSub { font-size:1.1rem; color:#7d8590; max-width:520px; margin:0 auto 2rem; line-height:1.7; }
+.heroCta { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+.ctaPrimary { background:#58e6a0; color:#000; padding:.8rem 2rem; border-radius:8px; font-weight:700; font-size:1rem; text-decoration:none; transition:all .15s; }
+.ctaPrimary:hover { background:#3ecf8e; transform:translateY(-2px); }
+.ctaSecondary { color:#7d8590; padding:.8rem 1.5rem; font-size:.95rem; text-decoration:none; display:flex; align-items:center; transition:color .15s; }
+.ctaSecondary:hover { color:#e6edf3; }
+
+.heroStats { position:relative; display:flex; gap:0; margin-top:4rem; border:1px solid #21262d; border-radius:12px; overflow:hidden; background:#161b22; }
+.statItem { display:flex; flex-direction:column; align-items:center; padding:1.25rem 2.5rem; gap:.2rem; }
+.statItem:not(:last-child) { border-right:1px solid #21262d; }
+.statNum { font-family:'Bebas Neue',sans-serif; font-size:2rem; color:#58e6a0; line-height:1; }
+.statLabel { font-size:.78rem; color:#7d8590; font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+
+.features { padding:4rem 2rem; background:#0a0c0f; border-top:1px solid #21262d; }
+.featuresGrid { max-width:1000px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; }
+.featureCard { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:1.75rem 1.5rem; transition:all .2s; }
+.featureCard:hover { border-color:#30363d; transform:translateY(-3px); }
+.featureIcon { font-size:1.75rem; margin-bottom:1rem; }
+.featureCard h3 { font-size:1rem; font-weight:600; color:#e6edf3; margin-bottom:.5rem; }
+.featureCard p { font-size:.875rem; color:#7d8590; line-height:1.6; }
+
+.footer { padding:1.5rem 2.5rem; border-top:1px solid #21262d; display:flex; justify-content:space-between; align-items:center; font-size:.82rem; color:#484f58; flex-wrap:wrap; gap:.5rem; }
